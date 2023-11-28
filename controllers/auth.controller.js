@@ -23,28 +23,46 @@ const logInUser = (req, res, next) => {
         res.status(400).json({ message: "Provide email and password." });
         return;
     }
-    console.log({ email })
-    User
-        .findOne({ email })
-        .then((foundUser) => {
 
+    User.findOne({ email })
+        .then((foundUser) => {
             if (!foundUser) {
-                res.status(401).json({ message: "User not found." })
+                res.status(401).json({ message: "User not found." });
                 return;
             }
 
             if (foundUser.validatePassword(password)) {
-                const authToken = foundUser.signToken()
-                res.status(200).json({ OK: "BIENVENIDO", authToken })
-
+                try {
+                    const authToken = foundUser.signToken();
+                    //se usa para almacenar el token en la cookie 
+                    res.cookie("token", authToken, {
+                        httpOnly: true,
+                        secure: !(process.env.MODO === "developer")
+                    });
+                    //
+                    res.status(200).json({ message: "Welcome!", authToken });
+                } catch (error) {
+                    console.error("Error creating/authenticating token:", error);
+                    res.status(500).json({ message: "Error authenticating user." });
+                }
+            } else {
+                res.status(401).json({ message: "Incorrect password." });
             }
-            else {
-                res.status(401).json({ message: "Incorrect password" });
-            }
-
         })
-        .catch(err => next(err));
-}
+        .catch(err => {
+            console.error("Error finding user:", err);
+            res.status(500).json({ message: "Error finding user." });
+        });
+};
+
+const logOutUser = (req, res, next) => {
+    res.clearCookie("token")
+
+    res.status(200).json({ message: "adioooooosssssss" });
+};
+
+module.exports = { logOutUser };
+
 
 const verifyUser = (req, res, next) => {
 
@@ -56,6 +74,7 @@ const verifyUser = (req, res, next) => {
 module.exports = {
     signUpUser,
     logInUser,
-    verifyUser
+    verifyUser,
+    logOutUser
 
 }

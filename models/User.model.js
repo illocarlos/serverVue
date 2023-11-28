@@ -1,7 +1,6 @@
 const { Schema, model } = require("mongoose");
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-
 const userSchema = new Schema(
   {
     email: {
@@ -42,14 +41,40 @@ userSchema.pre('save', function (next) {
 userSchema.methods.signToken = function () {
   const { _id, username } = this
   const payload = { _id, username }
-
+  const expiresIn = 60 * 15
   const authToken = jwt.sign(
     payload,
     process.env.TOKEN_SECRET,
-    { algorithm: 'HS256', expiresIn: "6h" },
+    { algorithm: 'HS256', expiresIn },
   )
   return authToken
 }
+
+
+// userSchema.methods.signToken = function () {
+//   const { _id, username } = this
+//   const payload = { _id, username }
+//   const expiresIn = 60 * 15 * 300
+
+//   const refreshAuthToken = jwt.sign(
+//     payload,
+//     process.env.TOKEN_REFRESH,
+//     { algorithm: 'HS256', expiresIn },
+//   )
+
+
+//   //se usa para almacenar el token en la cookie 
+//   res.cookie("refreshAuthToken", refreshAuthToken, {
+//     httpOnly: true,
+//     secure: !(process.env.MODO === "developer"),
+//     expires: new Date(Date.now() + expiresIn * 1000)
+
+//   });
+//   //
+//   return refreshAuthToken
+// }
+
+
 userSchema.methods.validatePassword = function (candidatePassword) {
   return bcrypt.compareSync(candidatePassword, this.password)
 }
